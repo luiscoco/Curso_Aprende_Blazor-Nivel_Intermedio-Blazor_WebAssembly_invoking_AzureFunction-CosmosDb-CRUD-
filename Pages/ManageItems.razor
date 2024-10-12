@@ -3,94 +3,114 @@
 @using BlazorWebAssemblyForInvokingAzureFunctionCosmosDBCRUD.Services
 @inject CosmosDbService CosmosService
 
-<h3>To-Do List and Item Management</h3>
+<div class="container mt-5">
+    <h3 class="text-primary mb-4">To-Do List and Item Management</h3>
 
-<!-- Section to create a new item -->
-<h4>Create a new To-Do item</h4>
+    <!-- Section to create a new item -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h4 class="card-title text-secondary">Create a new To-Do item</h4>
 
-<EditForm Model="newItem" OnValidSubmit="CreateNewItem">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+            <EditForm Model="newItem" OnValidSubmit="CreateNewItem">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
 
-    <div>
-        <label>Name:</label>
-        <InputText @bind-Value="newItem.name" />
+                <div class="mb-3">
+                    <label class="form-label">Name:</label>
+                    <InputText @bind-Value="newItem.name" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description:</label>
+                    <InputText @bind-Value="newItem.description" class="form-control" />
+                </div>
+                <div class="form-check mb-3">
+                    <InputCheckbox @bind-Value="newItem.IsCompleted" class="form-check-input" />
+                    <label class="form-check-label">Completed</label>
+                </div>
+
+                <button type="submit" class="btn btn-success">Create Item</button>
+            </EditForm>
+
+            @if (createMessage != null)
+            {
+                <p class="mt-3 alert alert-info">@createMessage</p>
+            }
+        </div>
     </div>
-    <div>
-        <label>Description:</label>
-        <InputText @bind-Value="newItem.description" />
+
+    <!-- Section to list existing items -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h4 class="card-title text-secondary">Existing To-Do Items</h4>
+
+            @if (items == null)
+            {
+                <p><em>Loading...</em></p>
+            }
+            else if (!items.Any())
+            {
+                <p class="text-warning">No items found.</p>
+            }
+            else
+            {
+                <ul class="list-group">
+                    @foreach (var item in items)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>@item.name</strong> - @item.description -
+                                <span class="badge bg-primary">@((item.IsCompleted) ? "Completed" : "Pending")</span>
+                            </div>
+                            <div>
+                                <button class="btn btn-danger btn-sm me-2" @onclick="() => DeleteItem(item.id)">Delete</button>
+                                <button class="btn btn-warning btn-sm" @onclick="() => EditItem(item.id)">Update</button>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
     </div>
-    <div>
-        <label>Completed:</label>
-        <InputCheckbox @bind-Value="newItem.IsCompleted" />
-    </div>
 
-    <button type="submit">Create Item</button>
-</EditForm>
-
-@if (createMessage != null)
-{
-    <p>@createMessage</p>
-}
-
-<!-- Section to list existing items -->
-<h4>Existing To-Do Items</h4>
-
-@if (items == null)
-{
-    <p><em>Loading...</em></p>
-}
-else if (!items.Any())
-{
-    <p>No items found.</p>
-}
-else
-{
-    <ul>
-        @foreach (var item in items)
-        {
-            <li>
-                <strong>@item.name</strong> - @item.description - Completed: @item.IsCompleted
-                <button @onclick="() => DeleteItem(item.id)">Delete</button>
-                <button @onclick="() => EditItem(item.id)">Update</button>
-            </li>
-        }
-    </ul>
-}
-
-@if (isEditMode)
-{
-    <h4>Update To-Do Item</h4>
-
-    @if (currentItem != null)
+    <!-- Section to update existing item -->
+    @if (isEditMode)
     {
-        <EditForm Model="currentItem" OnValidSubmit="UpdateItem">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <h4 class="card-title text-secondary">Update To-Do Item</h4>
 
-            <div>
-                <label>Name:</label>
-                <InputText @bind-Value="currentItem.name" />
-            </div>
-            <div>
-                <label>Description:</label>
-                <InputText @bind-Value="currentItem.description" />
-            </div>
-            <div>
-                <label>Completed:</label>
-                <InputCheckbox @bind-Value="currentItem.IsCompleted" />
-            </div>
+                @if (currentItem != null)
+                {
+                    <EditForm Model="currentItem" OnValidSubmit="UpdateItem">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
 
-            <button type="submit">Update Item</button>
-            <button type="button" @onclick="CancelEdit">Cancel</button>
-        </EditForm>
+                        <div class="mb-3">
+                            <label class="form-label">Name:</label>
+                            <InputText @bind-Value="currentItem.name" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description:</label>
+                            <InputText @bind-Value="currentItem.description" class="form-control" />
+                        </div>
+                        <div class="form-check mb-3">
+                            <InputCheckbox @bind-Value="currentItem.IsCompleted" class="form-check-input" />
+                            <label class="form-check-label">Completed</label>
+                        </div>
 
-        @if (updateMessage != null)
-        {
-            <p>@updateMessage</p>
-        }
+                        <button type="submit" class="btn btn-primary">Update Item</button>
+                        <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                    </EditForm>
+
+                    @if (updateMessage != null)
+                    {
+                        <p class="mt-3 alert alert-info">@updateMessage</p>
+                    }
+                }
+            </div>
+        </div>
     }
-}
+</div>
 
 @code {
     private List<TodoItem> items;
