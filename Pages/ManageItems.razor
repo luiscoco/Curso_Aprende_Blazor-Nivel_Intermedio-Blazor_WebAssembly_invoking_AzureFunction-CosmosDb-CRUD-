@@ -1,0 +1,169 @@
+﻿@page "/manage-items"
+@using BlazorWebAssemblyForInvokingAzureFunctionCosmosDBCRUD.Models
+@using BlazorWebAssemblyForInvokingAzureFunctionCosmosDBCRUD.Services
+@inject CosmosDbService CosmosService
+
+<h3>To-Do List and Item Management</h3>
+
+<!-- Section to create a new item -->
+<h4>Create a new To-Do item</h4>
+
+<EditForm Model="newItem" OnValidSubmit="CreateNewItem">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Name:</label>
+        <InputText @bind-Value="newItem.name" />
+    </div>
+    <div>
+        <label>Description:</label>
+        <InputText @bind-Value="newItem.description" />
+    </div>
+    <div>
+        <label>Completed:</label>
+        <InputCheckbox @bind-Value="newItem.IsCompleted" />
+    </div>
+
+    <button type="submit">Create Item</button>
+</EditForm>
+
+@if (createMessage != null)
+{
+    <p>@createMessage</p>
+}
+
+<!-- Section to list existing items -->
+<h4>Existing To-Do Items</h4>
+
+@if (items == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!items.Any())
+{
+    <p>No items found.</p>
+}
+else
+{
+    <ul>
+        @foreach (var item in items)
+        {
+            <li>
+                <strong>@item.name</strong> - @item.description - Completed: @item.IsCompleted
+                <button @onclick="() => DeleteItem(item.id)">Delete</button>
+                <button @onclick="() => EditItem(item.id)">Update</button>
+            </li>
+        }
+    </ul>
+}
+
+@if (isEditMode)
+{
+    <h4>Update To-Do Item</h4>
+
+    @if (currentItem != null)
+    {
+        <EditForm Model="currentItem" OnValidSubmit="UpdateItem">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div>
+                <label>Name:</label>
+                <InputText @bind-Value="currentItem.name" />
+            </div>
+            <div>
+                <label>Description:</label>
+                <InputText @bind-Value="currentItem.description" />
+            </div>
+            <div>
+                <label>Completed:</label>
+                <InputCheckbox @bind-Value="currentItem.IsCompleted" />
+            </div>
+
+            <button type="submit">Update Item</button>
+            <button type="button" @onclick="CancelEdit">Cancel</button>
+        </EditForm>
+
+        @if (updateMessage != null)
+        {
+            <p>@updateMessage</p>
+        }
+    }
+}
+
+@code {
+    private List<TodoItem> items;
+    private TodoItem newItem = new TodoItem();
+    private TodoItem currentItem = null; // Holds the item being updated
+    private string createMessage;
+    private string updateMessage;
+    private bool isEditMode = false; // Flag to show or hide the update form
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load existing items when the page initializes
+        items = await CosmosService.GetItemsAsync();
+    }
+
+    // Create a new item
+    private async Task CreateNewItem()
+    {
+        newItem.id = Guid.NewGuid().ToString(); // Generate a new unique ID for the item
+        bool isCreated = await CosmosService.CreateItemAsync(newItem);
+        if (isCreated)
+        {
+            createMessage = "Item created successfully!";
+            newItem = new TodoItem(); // Reset the form after success
+            items = await CosmosService.GetItemsAsync(); // Refresh the list after creating a new item
+        }
+        else
+        {
+            createMessage = "Failed to create item.";
+        }
+    }
+
+    // Delete an item by ID
+    private async Task DeleteItem(string id)
+    {
+        bool isDeleted = await CosmosService.DeleteItemAsync(id);
+        if (isDeleted)
+        {
+            items = await CosmosService.GetItemsAsync(); // Refresh the list after deletion
+        }
+    }
+
+    // Enter edit mode for an item by ID
+    private async Task EditItem(string id)
+    {
+        currentItem = await CosmosService.GetItemByIdAsync(id);
+        if (currentItem != null)
+        {
+            isEditMode = true; // Show the update form
+            updateMessage = null; // Clear any previous update messages
+        }
+    }
+
+    // Update the selected item
+    private async Task UpdateItem()
+    {
+        bool isUpdated = await CosmosService.UpdateItemAsync(currentItem.id, currentItem);
+        if (isUpdated)
+        {
+            updateMessage = "Item updated successfully!";
+            items = await CosmosService.GetItemsAsync(); // Refresh the list after the update
+            isEditMode = false; // Exit edit mode
+        }
+        else
+        {
+            updateMessage = "Failed to update item.";
+        }
+    }
+
+    // Cancel editing
+    private void CancelEdit()
+    {
+        currentItem = null; // Clear the current item
+        isEditMode = false; // Hide the update form
+    }
+}
